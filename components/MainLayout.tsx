@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, SafeAreaView } from 'react-native';
 import Navbar from './Navbar';
+import TopNavbar from './TopNavbar';
 
 // Import screen components
 import HomeScreen from './screens/HomeScreen';
@@ -31,6 +32,7 @@ const MainLayout: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <TopNavbar />
       <View style={styles.content}>
         {renderScreen()}
       </View>
@@ -46,6 +48,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingTop: 8, // Add some space below the TopNavbar
   },
 });
 
