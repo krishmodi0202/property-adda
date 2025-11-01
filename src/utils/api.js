@@ -1,6 +1,7 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://YOUR_BACKEND_URL:5000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://YOUR_BACKEND_URL:5000/api';
 
 // Create axios instance
 const api = axios.create({
@@ -12,10 +13,14 @@ const api = axios.create({
 
 // Add a request interceptor to add the auth token to requests
 api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (e) {
     }
     return config;
   },
@@ -25,11 +30,11 @@ api.interceptors.request.use(
 );
 
 // Auth API calls
-export const register = async (userData) => {
+export const registerUser = async (userData) => {
   try {
     const response = await api.post('/auth/register', userData);
     if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+      await AsyncStorage.setItem('token', response.data.token);
     }
     return response.data;
   } catch (error) {
@@ -37,11 +42,11 @@ export const register = async (userData) => {
   }
 };
 
-export const login = async (credentials) => {
+export const loginUser = async (credentials) => {
   try {
     const response = await api.post('/auth/login', credentials);
     if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
+      await AsyncStorage.setItem('token', response.data.token);
     }
     return response.data;
   } catch (error) {
@@ -58,8 +63,8 @@ export const getMe = async () => {
   }
 };
 
-export const logout = () => {
-  localStorage.removeItem('token');
+export const logoutUser = async () => {
+  await AsyncStorage.removeItem('token');
 };
 
 export default api;

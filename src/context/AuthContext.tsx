@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { registerUser, loginUser, logoutUser, getMe } from '../utils/api';
-import { User } from '../types/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { User } from '../types/auth';
+import { getMe, loginUser, logoutUser, registerUser } from '../utils/api';
 
 export interface AuthContextType {
   user: User | null;
@@ -71,9 +71,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Login user
   const login = async (email: string, password: string) => {
     try {
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
       setLoading(true);
       setError(null);
       const response = await loginUser({ email, password });
+      
       if (response && response.token && response.user) {
         await AsyncStorage.setItem('token', response.token);
         setUser({ 
@@ -81,11 +86,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           name: response.user.name, 
           _id: response.user._id 
         });
+      } else {
+        throw new Error('Invalid response from server');
       }
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message || 'Login failed');
-      throw error;
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+      console.error('Login error:', errorMessage, err.response?.data);
+      setError(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setLoading(false);
     }
