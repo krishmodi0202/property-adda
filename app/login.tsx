@@ -1,18 +1,49 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import TopNavbar from '../components/TopNavbar';
+import { useAuth } from '../src/context/AuthContext';
 
 const LoginScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { login, register, user } = useAuth();
 
-  const handleSubmit = () => {
-    // Handle login/signup logic here
-    console.log('Form submitted:', { email, password });
+  useEffect(() => {
+    if (user) {
+      router.replace('/(tabs)');
+    }
+  }, [user]);
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (!isLogin && !name) {
+      Alert.alert('Error', 'Please enter your name');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await register(name, email, password);
+      }
+      // Navigation is handled by the useProtectedRoute hook
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'An error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -33,6 +64,20 @@ const LoginScreen = () => {
             <Text style={styles.subtitle}>
               {isLogin ? 'Sign in to continue' : 'Create an account to get started'}
             </Text>
+            
+            {!isLogin && (
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#6b7280" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full Name"
+                  placeholderTextColor="#9ca3af"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
+            )}
 
             <View style={styles.formContainer}>
               <View style={styles.inputContainer}>
@@ -88,10 +133,16 @@ const LoginScreen = () => {
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={styles.loginButton} onPress={handleSubmit}>
-                <Text style={styles.loginButtonText}>
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                </Text>
+              <TouchableOpacity 
+                style={[styles.button, isLoading && styles.buttonDisabled]} 
+                onPress={handleSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.buttonText}>{isLogin ? 'Sign In' : 'Sign Up'}</Text>
+                )}
               </TouchableOpacity>
 
               <View style={styles.dividerContainer}>
@@ -199,7 +250,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  loginButton: {
+  button: {
     backgroundColor: '#2563eb',
     borderRadius: 12,
     height: 56,
@@ -207,10 +258,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  loginButtonText: {
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+    textAlign: 'center',
   },
   dividerContainer: {
     flexDirection: 'row',
