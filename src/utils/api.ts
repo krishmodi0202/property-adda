@@ -40,9 +40,19 @@ interface LoginParams {
 export const loginUser = async ({ email, password }: LoginParams): Promise<AuthResponse> => {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+    
+    if (!response.data || !response.data.token || !response.data.user) {
+      console.error('Invalid server response:', response.data);
+      throw new Error('Invalid response format from server');
+    }
+    
     return response.data;
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (error: any) {
+    if (error.response?.data?.message) {
+      console.error('Login error:', error.response.data.message);
+      throw new Error(error.response.data.message);
+    }
+    console.error('Login error:', error.message || error);
     throw error;
   }
 };

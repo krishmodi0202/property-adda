@@ -67,11 +67,14 @@ exports.login = async (req, res) => {
         // Generate token
         const token = generateToken(user._id);
 
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            token
+        // Return the same format as register
+        return res.json({
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email
+            }
         });
     } catch (error) {
         console.error(error);
